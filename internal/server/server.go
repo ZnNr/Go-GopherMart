@@ -5,6 +5,10 @@ import (
 	"net/http"
 )
 
+// New создает новый экземпляр HTTP-сервера с заданным адресом и маршрутизатором.
 func New(address string, router *chi.Mux) *http.Server {
-	return &http.Server{Addr: address, Handler: router}
+	return &http.Server{
+		Addr:    address,
+		Handler: router,
+	}
 }

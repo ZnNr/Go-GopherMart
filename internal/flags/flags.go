@@ -10,6 +10,7 @@ const (
 	defaultAddr string = "localhost:8080"
 )
 
+// WithDatabase добавляет опцию для конфигурации строки подключения к базе данных.
 func WithDatabase() models.Option {
 	return func(p *models.Config) {
 		flag.StringVar(&p.Database.ConnectionString, "d", "postgres://practicum:yandex@localhost:5432/postgres?sslmode=disable", "connection string for db")
@@ -19,6 +20,7 @@ func WithDatabase() models.Option {
 	}
 }
 
+// WithAddr добавляет опцию для конфигурации адреса и порта сервера.
 func WithAddr() models.Option {
 	return func(p *models.Config) {
 		flag.StringVar(&p.Server.Address, "a", defaultAddr, "address and port to run server")
@@ -28,6 +30,7 @@ func WithAddr() models.Option {
 	}
 }
 
+// WithAccrual добавляет опцию для конфигурации адреса и порта системы начисления.
 func WithAccrual() models.Option {
 	return func(p *models.Config) {
 		flag.StringVar(&p.AccrualSystem.Address, "r", "", "address and port to run server")
@@ -37,6 +40,7 @@ func WithAccrual() models.Option {
 	}
 }
 
+// Init инициализирует конфигурацию с заданными опциями.
 func Init(opts ...models.Option) *models.Config {
 	p := &models.Config{}
 	for _, opt := range opts {

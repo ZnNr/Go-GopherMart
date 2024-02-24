@@ -24,13 +24,13 @@ func main() {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
-
+	// Инициализируем флаги приложения
 	params := flags.Init(
 		flags.WithAddr(),
 		flags.WithDatabase(),
 		flags.WithAccrual(),
 	)
-
+	// Открываем соединение с базой данных
 	db, err := sql.Open("pgx", params.Database.ConnectionString)
 	if err != nil {
 		log.Sugar().Errorf("error while init db: %s", err.Error())
@@ -42,15 +42,17 @@ func main() {
 			os.Exit(1)
 		}
 	}()
+	// Инициализируем менеджер базы данных
 	dbManager, err := database.New(ctx, db)
 	if err != nil {
 		log.Sugar().Errorf("error while init db: %s", err.Error())
 		os.Exit(1)
 	}
-
-	appServer := server.New(params.Server.Address, router.New(dbManager, log.Sugar()))
+	// Создаем экземпляр сервера приложения
+	appServer := server.New(params.Server.Address, router.SetupRouter(dbManager, log.Sugar()))
+	// Создаем экземпляр системы начисления бонусных баллов
 	loyaltyPointsSystem := loyalty.New(params.AccrualSystem.Address, dbManager, log.Sugar())
-
+	// Создаем экземпляр runner и запускаем приложение
 	runner := runner2.New(appServer, loyaltyPointsSystem, log.Sugar())
 	if err = runner.Run(ctx); err != nil {
 		log.Sugar().Errorf("error while running runner: %s", err.Error())

@@ -15,10 +15,10 @@ import (
 type Runner struct {
 	log                 *zap.SugaredLogger
 	server              *http.Server
-	loyaltyPointsSystem *loyalty.LoyaltySystem
+	loyaltyPointsSystem *loyalty.LoyaltySystemManager
 }
 
-func New(server *http.Server, loyaltyPointsSystem *loyalty.LoyaltySystem, log *zap.SugaredLogger) *Runner {
+func New(server *http.Server, loyaltyPointsSystem *loyalty.LoyaltySystemManager, log *zap.SugaredLogger) *Runner {
 	return &Runner{
 		server:              server,
 		log:                 log,
