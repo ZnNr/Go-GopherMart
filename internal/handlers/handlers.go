@@ -34,7 +34,6 @@ func (h *Handler) GetBalanceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(userBalance)
-
 }
 
 // GetWithdrawalsHandler обрабатывает запрос на получение информации о выводах средств пользователя.
@@ -75,7 +74,7 @@ func (h *Handler) WithdrawHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Проверка формата заказа
-	if !h.сheckOrderLuhnValidation(withdrawInfo.OrderID) {
+	if !h.checkOrderLuhnValidation(withdrawInfo.OrderID) {
 		h.log.Error("invalid order format")
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
@@ -139,7 +138,7 @@ func (h *Handler) LoadOrderHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// Получаем заказ из данных запроса
 	order := data.String()
-	if !h.сheckOrderLuhnValidation(order) {
+	if !h.checkOrderLuhnValidation(order) {
 		h.log.Error("invalid order format")
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
@@ -321,8 +320,8 @@ func (h *Handler) parseInputUser(r *http.Request) (*models.User, bool) {
 	return userFromRequest, true
 }
 
-// CheckOrderLuhnValidation проверяет ID заказа на соответствие алгоритму Luhn.
-func (h *Handler) сheckOrderLuhnValidation(orderID string) bool {
+// checkOrderLuhnValidation проверяет ID заказа на соответствие алгоритму Luhn.
+func (h *Handler) checkOrderLuhnValidation(orderID string) bool {
 	// Преобразование ID заказа в целое число.
 	orderAsInteger, err := strconv.Atoi(orderID)
 	if err != nil {

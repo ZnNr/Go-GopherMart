@@ -17,8 +17,8 @@ import (
 func TestHandler_Register(t *testing.T) {
 	t.Run("positive", func(t *testing.T) {
 		manager := newMockDbManager(t)
-		manager.On("RegisterHandler", "test", "test").Return(nil)
-		manager.On("LoginHandler", "test", "test").Return(nil)
+		manager.On("Register", "test", "test").Return(nil)
+		manager.On("Login", "test", "test").Return(nil)
 		logger, err := zap.NewDevelopment()
 		if err != nil {
 			os.Exit(1)
@@ -74,7 +74,7 @@ func TestHandler_Register(t *testing.T) {
 		defer logger.Sync()
 
 		manager := newMockDbManager(t)
-		manager.On("RegisterHandler", "test", "test").Return(errors2.ErrUserAlreadyExists)
+		manager.On("Register", "test", "test").Return(errors2.ErrUserAlreadyExists)
 
 		log := *logger.Sugar()
 		handler := New(manager, &log)
@@ -96,7 +96,7 @@ func TestHandler_Register(t *testing.T) {
 func TestHandler_Login(t *testing.T) {
 	t.Run("positive", func(t *testing.T) {
 		manager := newMockDbManager(t)
-		manager.On("LoginHandler", "test", "test").Return(nil)
+		manager.On("Login", "test", "test").Return(nil)
 
 		logger, err := zap.NewDevelopment()
 		if err != nil {
@@ -142,7 +142,7 @@ func TestHandler_Login(t *testing.T) {
 	})
 	t.Run("incorrect password", func(t *testing.T) {
 		manager := newMockDbManager(t)
-		manager.On("LoginHandler", "test", "incorrect-password").Return(errors2.ErrInvalidCredentials)
+		manager.On("Login", "test", "incorrect-password").Return(errors2.ErrInvalidCredentials)
 		logger, err := zap.NewDevelopment()
 		if err != nil {
 			os.Exit(1)
@@ -177,9 +177,9 @@ func TestHandler_LoadOrder(t *testing.T) {
 
 	t.Run("positive: new order created", func(t *testing.T) {
 		manager := newMockDbManager(t)
-		manager.On("RegisterHandler", "test", "test").Return(nil)
-		manager.On("LoginHandler", "test", "test").Return(nil)
-		manager.On("LoadOrderHandler", "test", "614371538763429").Return(nil)
+		manager.On("Register", "test", "test").Return(nil)
+		manager.On("Login", "test", "test").Return(nil)
+		manager.On("LoadOrder", "test", "614371538763429").Return(nil)
 
 		handler := New(manager, &log)
 		r := chi.NewRouter()
@@ -211,9 +211,9 @@ func TestHandler_LoadOrder(t *testing.T) {
 
 	t.Run("positive: order was already created by the same user", func(t *testing.T) {
 		manager := newMockDbManager(t)
-		manager.On("RegisterHandler", "test", "test").Return(nil)
-		manager.On("LoginHandler", "test", "test").Return(nil)
-		manager.On("LoadOrderHandler", "test", "614371538763429").Return(errors2.ErrCreatedBySameUser)
+		manager.On("Register", "test", "test").Return(nil)
+		manager.On("Login", "test", "test").Return(nil)
+		manager.On("LoadOrder", "test", "614371538763429").Return(errors2.ErrCreatedBySameUser)
 
 		handler := New(manager, &log)
 		r := chi.NewRouter()
@@ -245,8 +245,8 @@ func TestHandler_LoadOrder(t *testing.T) {
 
 	t.Run("negative: bad order", func(t *testing.T) {
 		manager := newMockDbManager(t)
-		manager.On("RegisterHandler", "test", "test").Return(nil)
-		manager.On("LoginHandler", "test", "test").Return(nil)
+		manager.On("Register", "test", "test").Return(nil)
+		manager.On("Login", "test", "test").Return(nil)
 
 		handler := New(manager, &log)
 		r := chi.NewRouter()
@@ -304,9 +304,9 @@ func TestHandler_LoadOrder(t *testing.T) {
 
 	t.Run("negative: order was already created by the other user", func(t *testing.T) {
 		manager := newMockDbManager(t)
-		manager.On("RegisterHandler", "test", "test").Return(nil)
-		manager.On("LoginHandler", "test", "test").Return(nil)
-		manager.On("LoadOrderHandler", "test", "614371538763429").Return(errors2.ErrCreatedDiffUser)
+		manager.On("Register", "test", "test").Return(nil)
+		manager.On("Login", "test", "test").Return(nil)
+		manager.On("LoadOrder", "test", "614371538763429").Return(errors2.ErrCreatedDiffUser)
 
 		handler := New(manager, &log)
 		r := chi.NewRouter()
@@ -347,8 +347,8 @@ func TestHandler_GetOrders(t *testing.T) {
 
 	t.Run("positive: success", func(t *testing.T) {
 		manager := newMockDbManager(t)
-		manager.On("RegisterHandler", "test", "test").Return(nil)
-		manager.On("LoginHandler", "test", "test").Return(nil)
+		manager.On("Register", "test", "test").Return(nil)
+		manager.On("Login", "test", "test").Return(nil)
 		manager.On("GetUserOrders", "test").Return([]byte(`[{"number":"1","uploaded_at":"2021-08-15T14:30:45.0000001+03:00","status":"NEW","accrual":100.5}]`), nil)
 
 		handler := New(manager, &log)
@@ -378,8 +378,8 @@ func TestHandler_GetOrders(t *testing.T) {
 	})
 	t.Run("positive: no data", func(t *testing.T) {
 		manager := newMockDbManager(t)
-		manager.On("RegisterHandler", "test", "test").Return(nil)
-		manager.On("LoginHandler", "test", "test").Return(nil)
+		manager.On("Register", "test", "test").Return(nil)
+		manager.On("Login", "test", "test").Return(nil)
 		manager.On("GetUserOrders", "test").Return(nil, errors2.ErrNoData)
 
 		handler := New(manager, &log)
@@ -451,10 +451,10 @@ func TestHandler_Withdraw(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			manager := newMockDbManager(t)
-			manager.On("RegisterHandler", "test", "test").Return(nil)
-			manager.On("LoginHandler", "test", "test").Return(nil)
+			manager.On("Register", "test", "test").Return(nil)
+			manager.On("Login", "test", "test").Return(nil)
 			if tt.expectedStatus != "422 Unprocessable Entity" {
-				manager.On("WithdrawHandler", "test", tt.order, tt.withdraw).Return(tt.errDB)
+				manager.On("Withdraw", "test", tt.order, tt.withdraw).Return(tt.errDB)
 			}
 
 			handler := New(manager, &log)
@@ -514,8 +514,8 @@ func TestHandler_GetBalance(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			manager := newMockDbManager(t)
-			manager.On("RegisterHandler", "test", "test").Return(nil)
-			manager.On("LoginHandler", "test", "test").Return(nil)
+			manager.On("Register", "test", "test").Return(nil)
+			manager.On("Login", "test", "test").Return(nil)
 			manager.On("GetBalanceInfo", "test").Return([]byte(tt.balanceFromDB), tt.dbErr)
 
 			handler := New(manager, &log)
@@ -582,9 +582,9 @@ func TestHandler_GetWithdrawals(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			manager := newMockDbManager(t)
-			manager.On("RegisterHandler", "test", "test").Return(nil)
-			manager.On("LoginHandler", "test", "test").Return(nil)
-			manager.On("GetWithdrawalsHandler", "test").Return([]byte(tt.withdrawals), tt.dbErr)
+			manager.On("Register", "test", "test").Return(nil)
+			manager.On("Login", "test", "test").Return(nil)
+			manager.On("GetWithdrawals", "test").Return([]byte(tt.withdrawals), tt.dbErr)
 
 			handler := New(manager, &log)
 			r := chi.NewRouter()

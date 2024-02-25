@@ -20,7 +20,7 @@ func (m *Manager) GetBalanceInfo(login string) ([]byte, error) {
 		return nil, fmt.Errorf("error while getting curent user balance: %w", err)
 	}
 	// Получение суммы снятых средств у пользователя
-	getUserWithdrawn := "SELECT sum(amount) AS withdrawn FROM withdraw WHERE login = $1"
+	getUserWithdrawn := "select sum(amount) as withdrawn from withdraw where login = $1"
 	row := m.db.QueryRow(getUserWithdrawn, login)
 	var userWithdrawn sql.NullFloat64
 	if err = row.Scan(&userWithdrawn); err != nil {
@@ -47,7 +47,7 @@ func (m *Manager) GetBalanceInfo(login string) ([]byte, error) {
 
 // GetWithdrawals возвращает информацию о снятых средствах пользователя.
 func (m *Manager) GetWithdrawals(login string) ([]byte, error) {
-	getUserWithdrawals := "SELECT order_id, amount, processed_at FROM withdraw WHERE login = $1 ORDER BY processed_at"
+	getUserWithdrawals := `select order_id, amount, processed_at from withdraw where login = $1 order by processed_at`
 	rows, err := m.db.Query(getUserWithdrawals, login)
 	if err != nil {
 		return nil, fmt.Errorf("error while searching for user withdrawals: %w", err)
@@ -91,7 +91,7 @@ func (m *Manager) Withdraw(login string, orderID string, sum float64) error {
 	if userBalance < sum {
 		return errors2.ErrInsufficientBalance
 	}
-	withdraw := "INSERT INTO withdraw VALUES ($1, $2, now(), $3)"
+	withdraw := "insert into withdraw values ($1, $2, now(), $3)"
 	if _, err = m.db.Exec(withdraw, login, orderID, sum); err != nil {
 		return fmt.Errorf("error while trying to withdraw: %w", err)
 	}
@@ -101,7 +101,7 @@ func (m *Manager) Withdraw(login string, orderID string, sum float64) error {
 // GetUserOrders получает информацию о заказах пользователя.
 func (m *Manager) GetUserOrders(login string) ([]byte, error) {
 	// Запрос на получение заказов пользователя из базы данных.
-	getUserOrdersQuery := `SELECT order_id, status, accrual, uploaded_at FROM orders WHERE login = $1`
+	getUserOrdersQuery := `select order_id, status, accrual, uploaded_at from orders where login = $1`
 	rows, err := m.db.Query(getUserOrdersQuery, login)
 	if err != nil {
 		return nil, fmt.Errorf("error while getting orders from db for user %q: %w", login, err)
@@ -144,7 +144,7 @@ func (m *Manager) GetUserOrders(login string) ([]byte, error) {
 
 // GetAllOrders получает все заказы.
 func (m *Manager) GetAllOrders() ([]string, error) {
-	getAllOrdersQuery := `SELECT order_id FROM orders`
+	getAllOrdersQuery := `select order_id from orders`
 	rows, err := m.db.Query(getAllOrdersQuery)
 	if err != nil {
 		return nil, fmt.Errorf("error while getting all orders from db: %w", err)
@@ -168,7 +168,7 @@ func (m *Manager) GetAllOrders() ([]string, error) {
 // UpdateOrderInfo обновляет информацию о заказе.
 func (m *Manager) UpdateOrderInfo(orderInfo *models.OrderInfo) error {
 	// Запрос на обновление информации о заказе в базе данных.
-	updateOrderInfoQuery := `UPDATE orders SET status = $1, accrual = $2 WHERE order_id = $3`
+	updateOrderInfoQuery := `update orders set status=$1, accrual=$2 where order_id=$3`
 	if _, err := m.db.Exec(updateOrderInfoQuery, string(orderInfo.Status), orderInfo.Accrual, orderInfo.Order); err != nil {
 		return fmt.Errorf("error while updating order info: %w", err)
 	}
@@ -178,20 +178,20 @@ func (m *Manager) UpdateOrderInfo(orderInfo *models.OrderInfo) error {
 // LoadOrder загружает заказ для указанного логина и идентификатора заказа.
 func (m *Manager) LoadOrder(login string, orderID string) error {
 	// Проверяем, существует ли заказ с указанным идентификатором.
-	getOrderByIDQuery := `SELECT login FROM orders WHERE order_id = $1`
-	row := m.db.QueryRow(getOrderByIDQuery)
+	getOrderByIDQuery := `select login from orders where order_id = $1`
+	row := m.db.QueryRow(getOrderByIDQuery, orderID)
 
 	var userName string
 	err := row.Scan(&userName)
-	switch err {
-	case sql.ErrNoRows:
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
 		// Если заказ не существует, создаем новый заказ.
-		loadOrderQuery := `INSERT INTO orders VALUES ($1, $2, now(), $3, $4)`
+		loadOrderQuery := `insert into orders values ($1, $2, now(), $3, $4)`
 		if _, err = m.db.Exec(loadOrderQuery, orderID, login, models.OrderStatus("NEW"), 0); err != nil {
 			return fmt.Errorf("error while loading order %s: %w", orderID, err)
 		}
 		return nil
-	case nil:
+	case err == nil:
 		// Если заказ уже существует, проверяем, создан ли он тем же пользователем.
 		if userName == login {
 			return errors2.ErrCreatedBySameUser
@@ -210,10 +210,10 @@ func (m *Manager) Register(login string, password string) error {
 		return fmt.Errorf("error, this password is not allowed: %w", err)
 	}
 	// Запрос для добавления нового зарегистрированного пользователя.
-	registerUserQuery := ` INSERT INTO registered_users VALUES ($1, $2)`
+	registerUserQuery := `insert into registered_users values ($1, $2)`
 	if _, err = m.db.Exec(registerUserQuery, login, hash); err != nil {
 		// Обрабатываем возможные ошибки при выполнении запроса.
-		duplicateKeyErr := errors2.ErrDuplicateKey{Key: "registered_user_pkey"}
+		duplicateKeyErr := errors2.ErrDuplicateKey{Key: "registered_users_pkey"}
 		if err.Error() == duplicateKeyErr.Error() {
 			return errors2.ErrUserAlreadyExists
 		}
@@ -226,7 +226,7 @@ func (m *Manager) Register(login string, password string) error {
 // Login выполняет аутентификацию пользователя с указанным логином и паролем.
 func (m *Manager) Login(login string, password string) error {
 	// Запрос для получения зарегистрированных пользователей.
-	getRegisteredUserQuery := `SELECT login, password FROM registered_users`
+	getRegisteredUserQuery := "select login, password from registered_users"
 	rows, err := m.db.Query(getRegisteredUserQuery)
 	if err != nil {
 		return fmt.Errorf("error while executing search query: %w", err)
@@ -257,13 +257,7 @@ func (m *Manager) Login(login string, password string) error {
 // GetUserBalance возвращает баланс пользователя с указанным логином.
 func (m *Manager) getUserBalance(login string) (float64, error) {
 	// Запрос для получения баланса пользователя.
-	getUserBalanceQuery := `
-        SELECT coalesce(sum(accrual), 0) - coalesce(sum(amount), 0) AS balance
-        FROM orders o
-        LEFT JOIN withdraw w ON o.login = w.login
-        WHERE o.login = $1
-        GROUP BY o.login;
-    `
+	getUserBalanceQuery := "select coalesce(sum(accrual), 0) - coalesce(sum(amount), 0) as balance from orders o left join withdraw w on o.login = w.login where o.login = $1 group by o.login;"
 	row := m.db.QueryRow(getUserBalanceQuery, login)
 	var balance sql.NullFloat64
 	if err := row.Scan(&balance); err != nil {
